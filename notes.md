@@ -37,7 +37,7 @@ context.
 The typing context is an ordered list of assumptions about the types of
 variables. 
 
-注：说两种解读方式：
+注：说有两种解读方式：
 
 1.	a has type A
 2.	by polymorphism, A has a proof a
@@ -95,7 +95,7 @@ things of type `A` where `A` has type `Type`.
       |- \x. \y. y : (x:Type) -> (y : x) -> x
 
 
-注：所以说，dependent types实际上就是polymorphism吗？？
+注：所以说，dependent types实际上就是polymorphism吗？！
 
 
 In pi-forall, we should eventually be able to write
@@ -110,7 +110,7 @@ or even (with some help from the parser)
 
 ### More typing rules - Types
 
-注：以上这样写的好处就是，比较灵活，但是有一些不想要的program也能type check
+注：以上这样写的好处就是比较灵活，不过只有上述规则的话，有一些不想要的program也能type check呀，所以：
 
 Actually, I lied.  The real typing rule that we want for lambda 
 has an additional precondition. We need to make sure that when we 
@@ -205,6 +205,11 @@ Thus, a conditional expression just takes a boolean and returns it.
 	and : Type -> Type -> Type
 	and = \p. \q. (c : Type) -> (p -> q -> c) -> c
 
+	注：有人回答到这个：
+	or = \p. \q. (c : Type) -> (p -> c) -> (q -> c) -> c
+	Stephanie说这个是or
+	我现在的理解是：and表示both，就是俩都要考虑到function f中，而or是either，考虑一个就好
+
 	conj : (p : Type) -> (q : Type) -> p -> q -> and p q
 	conj = \p. \q. \x. \y. \c. \f. f x y
 							这里对应(c : Type)
@@ -214,6 +219,10 @@ Thus, a conditional expression just takes a boolean and returns it.
 	// example
 	proj1 : (p : Type) -> (q : Type) -> and p q -> p
 	proj1 = \p. \q. \a. a p (\x. \y. x)
+					a的类型是and p q
+						and p q其实就是(c : Type) -> (p -> q -> c) -> c
+						   p对应的是c : Type
+						     这个f对应的是(p -> q -> c)
 
 	// example 2
 	proj1 : (p : Type) -> (q : Type) -> and p q -> q
@@ -227,8 +236,6 @@ Thus, a conditional expression just takes a boolean and returns it.
 注：为啥要c呢？we want to do anything with x & y, f is like doing anything and can return anything (that is, c).
 
 注：and是操作types的
-
-**TODO: 这里还是不是很清楚啊，看看wiki先！！**
 
 
 # From typing rules to a typing algorithm
@@ -293,16 +300,25 @@ know that we want A to be a type.
 
      G, x:A |- a <= B       G |- A <= Type
 	 ----------------------------------------    lambda
-     G |- \x.a <= (x:A) -> B
-	  
+     G |- \x.a <= (x:A) -> B		((x:A) -> B is given, we just check a against this)
+
 Applications can be in inference mode (in fact, checking mode doesn't help.)
 Here we must infer the type of the function, but once we have that type, we
 may to use it to check the type of the argument.
 	  
-      G |- a => (x:A) -> B 
+      G |- a => (x:A) -> B 		(后头有说，缺少lambda的inference rule，但是var什么的就可以）
 		G |- b <= A
     ---------------------------  app
 	   G |- a b => B { b / x }	  
+
+注：我想写成下边这个，但是应该就不行：
+
+      G |- a <= (x:A) -> B		(this is probably not OK, since we don't know B)
+		G |- b => A
+    ---------------------------  app
+	   G |- a b => B { b / x }
+
+注：inference is like: given G, a, return a type A. checking is like: given G, a, A, return true/false
 
 For types, it is apparent what their type is, so we will just continue to infer that.
 
@@ -312,7 +328,7 @@ For types, it is apparent what their type is, so we will just continue to infer 
 
 	  ----------------  type
 	  G |- Type => Type
-	  
+
 Notice that this system is fairly incomplete. There are inference rules for
 every form of expression except for lambda. On the other hand, only lambda
 expressions can be checked against types.  We can make checking more
@@ -331,11 +347,13 @@ applicable by the following rule:
 which allows us to use inference whenever checking doesn't apply.
 
 
-注：from inference to checking, 但是 from checking to inference就没有意义了，not syntax directed，
+注：from inference to checking, 但是 from checking to inference就没有意义了，not syntax-directed:
 
 	G |- a <= A     A = B
 	----------------------
 	G |- a => B
+
+	If written like this, A is unknown, we cannot get A out of the air, (that's why it's not syntax-directed)
 
 注：然后她说 we are missing something, 还是app rule和lambda rule的配合问题：
 
@@ -348,7 +366,7 @@ Let's think about the reverse problem a bit. There are programs that the checkin
 system won't admit but would have been acceptable by our first system. What do
 they look like?
 
-Well, they involve applications of explicit lambda terms:
+Well, they involve applications of explicit lambda terms: （注：所以说只要用let什么bind起来就没问题啦？）
 
        |- \x.x : bool -> bool     |- true : bool
       ------------------------------------------  app
