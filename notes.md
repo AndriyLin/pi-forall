@@ -1,3 +1,9 @@
+--- **06/16/2014 Morning** ---
+
+So the instructor, Stephanie Weirich, is married to another instructor this morning, Steve Zdancewic.. 贤伉俪
+
+-----
+
 ## A Simple Core language with Type in Type
 
 Let's consider a simple dependently-typed lambda calculus. What should it
@@ -8,6 +14,10 @@ contain? At the bare minimum we can start with the following five forms:
          a b         - function applications
          (x:A) -> B  - dependent function type, aka Pi
          Type        - the 'type' of types
+
+	注: (x:A) -> B is actually πx : A . B, just like forall (x : A), B
+	里头 B may contain x
+
 
 Note that we are using the *same* syntax for expressions and types. For
 clarity, I'll used lowercase letters `a` for expressions and uppercase letters
@@ -27,6 +37,12 @@ context.
 The typing context is an ordered list of assumptions about the types of
 variables. 
 
+注：说两种解读方式：
+
+1.	a has type A
+2.	by polymorphism, A has a proof a
+
+
 ### An initial set of typing rules - Variables and Functions
 
 If we know a variable's type because it is in the typing context, then that is
@@ -42,7 +58,12 @@ Functions get function types
 	 ---------------------------------    lambda
      G |- \x.a : (x:A) -> B
 
+注：这里是dependent types
+
+
 ### Example: Polymorphic identity functions
+
+注：到这里发现她就是按照整个notes的结构在讲
 
 Note that the variable x is allowed to appear in `B`. Why is this useful? Well
 it gives us *parametric polymorphism* right off the bat.  In Haskell, we 
@@ -73,6 +94,10 @@ things of type `A` where `A` has type `Type`.
      ------------------------------------------ lambda
       |- \x. \y. y : (x:Type) -> (y : x) -> x
 
+
+注：所以说，dependent types实际上就是polymorphism吗？？
+
+
 In pi-forall, we should eventually be able to write
 
      id : (x:Type) -> (y : x) -> x
@@ -84,6 +109,8 @@ or even (with some help from the parser)
      id = \x y . y 
 
 ### More typing rules - Types
+
+注：以上这样写的好处就是，比较灵活，但是有一些不想要的program也能type check
 
 Actually, I lied.  The real typing rule that we want for lambda 
 has an additional precondition. We need to make sure that when we 
@@ -115,6 +142,8 @@ Likewise, for polymorphism we need this, rather perplexing rule:
 	  ----------------  type
 	  G |- Type : Type
 
+注：就是这里和coq不同的，因此inconsistent, coq的话会 Type_i : Type_i+1，但是太麻烦了，这里就全部collapse了
+
 Because the type of the polymorphic identity function starts with 
 `(x:Type) -> ...` the `pi` rule means that `Type` must be a type for this pi
 type to make sense. We declare this by fiat using the type : type rule. 
@@ -132,6 +161,11 @@ need to substitute the argument for x in the result.
 		G |- b : A
     ---------------------------  app
 	   G |- a b : B { b / x }
+
+注：in STLC, a b 的结果 is of type B, 但是这里是dependent types, 所以需要substitution
+
+注：在这样dependent types下，A -> B 其实就是 (x : A) -> B 的语法糖，当x不重要的时候
+
 
 ### Example: applying the polymorphic identity function
 
@@ -166,26 +200,41 @@ Thus, a conditional expression just takes a boolean and returns it.
     cond : bool -> (x:Type) -> x -> x -> x
     cond = \ b . b 
 
-### Example: logical and  (i.e. product types)
+### Example' : Church And (即兴添加的样子)
 
-During lecture 1, instead of encoding booleans, we encoded logical "and".
+	and : Type -> Type -> Type
+	and = \p. \q. (c : Type) -> (p -> q -> c) -> c
 
-    and : Type -> Type -> Type
-    and = \p. \q. (c: Type) -> (p -> q -> c) -> c
+	conj : (p : Type) -> (q : Type) -> p -> q -> and p q
+	conj = \p. \q. \x. \y. \c. \f. f x y
+							这里对应(c : Type)
+								这里对应(p -> q -> c)
+									这里对应 c
 
-    conj : (p:Type) -> (q:Type) -> p -> q -> and p q
-    conj = \p.\q. \x.\y. \c. \f. f x y
+	// example
+	proj1 : (p : Type) -> (q : Type) -> and p q -> p
+	proj1 = \p. \q. \a. a p (\x. \y. x)
 
-    proj1 : (p:Type) -> (q:Type) -> and p q -> p
-    proj1  = \p. \q. \a. a p (\x.\y.x)
+	// example 2
+	proj1 : (p : Type) -> (q : Type) -> and p q -> q
+	proj1 = \p. \q. \a. a q (\x. \y. y)
 
-    proj2 : (p:Type) -> (q:Type) -> and p q -> q
-    proj2  = \p. \q. \a. a q (\x.\y.y)
+	and_commutes : (p : Type) -> (q : Type) -> and p q -> and q p
+	and_commutes = \p. \q. \a. conj q p (proj2 p q a) (proj1 p q a)
+	// 上边这个就make sense了
 
-    and_commutes : (p:Type) -> (q:Type) -> and p q -> and q p
-    and_commutes = \p. \q. \a. conj q p (proj2 p q a) (proj1 p q a)
+
+注：为啥要c呢？we want to do anything with x & y, f is like doing anything and can return anything (that is, c).
+
+注：and是操作types的
+
+**TODO: 这里还是不是很清楚啊，看看wiki先！！**
+
 
 # From typing rules to a typing algorithm
+
+注：在以上定义的type rules中，lambda rule里没有说明\x. __中x的type，所以需要inference
+
 
 So the rules that we have developed so far are great for saying *what* terms
 should type check, but they don't say *how*.  In particular, we've developed
@@ -273,7 +322,27 @@ applicable by the following rule:
 		 -------------  (a does not have a checking rule)
 		 G |- a <= A 
 
+注：她在课上写的是这个：
+
+       G |- a => A      A = B
+		 ----------------------  (a does not have a checking rule)
+		 G |- a <= B
+
 which allows us to use inference whenever checking doesn't apply.
+
+
+注：from inference to checking, 但是 from checking to inference就没有意义了，not syntax directed，
+
+	G |- a <= A     A = B
+	----------------------
+	G |- a => B
+
+注：然后她说 we are missing something, 还是app rule和lambda rule的配合问题：
+
+	ex1 = (\x. x) (\y. y) 这个就不行
+
+注：她说有beta reduction的program都没有办法通过这个bidirectional的system type check呀！
+
 
 Let's think about the reverse problem a bit. There are programs that the checking
 system won't admit but would have been acceptable by our first system. What do
@@ -313,6 +382,9 @@ i.e. substitutions that preserve normal forms.
 
 Alternatively, we can solve the problem through *elaboration*, the output 
 of a type checker will be a term that works purely in inference mode.
+
+----- **06/16/2014 Morning, till here** -----
+
 
 # Putting it all together in a Haskell implementation
 
