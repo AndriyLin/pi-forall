@@ -95,7 +95,11 @@ things of type `A` where `A` has type `Type`.
       |- \x. \y. y : (x:Type) -> (y : x) -> x
 
 
-注：所以说，dependent types实际上就是polymorphism吗？！
+注：所以说，dependent types实际上就是polymorphism吗？！据Stephanie, dependent types subsumes polymorphism, 有一些东西是dependent types能做而polymorphism不能的。
+
+dependent types里比polymorphism多一些，里头可以有computation。而像SystemF这样的polymorphism相当于在STLC上加上forall type 这样的东西，而dependent types里只要 (c : Type) -> ... 就可以
+
+然后dependent types里可以有一些computation, 甚至可以有expression -> Type的function，这都是polymorphism做不到的
 
 
 In pi-forall, we should eventually be able to write
