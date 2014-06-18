@@ -37,6 +37,8 @@ import Data.Maybe (listToMaybe, catMaybes)
 -- representations), error (for error reporting), and IO 
 -- (for e.g.  warning messages).
 type TcMonad = FreshMT (ReaderT Env (ErrorT Err IO))
+               -- originally, inferType :: Term -> Ctx -> Maybe (Term, Type)
+               -- then, inferType :: Term -> TcMonad (Term, Type)
 
 -- | Entry point for the type checking monad, given an 
 -- initial environment, returns either an error message 

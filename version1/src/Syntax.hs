@@ -16,7 +16,7 @@
 module Syntax where
 
 import Generics.RepLib hiding (Data,Refl)
-import Unbound.LocallyNameless hiding (Data,Refl)   
+import Unbound.LocallyNameless hiding (Data,Refl)   -- Unbound is the library that handles variables capture and other tricky stuffs
 import Text.ParserCombinators.Parsec.Pos       
 import Data.Maybe (fromMaybe)
 
@@ -49,18 +49,22 @@ data Term =
    -- basic language
      Type                               -- ^ type of types
    | Var TName                          -- ^ variables      
-   | Lam (Bind (TName, Embed Annot) Term)             
+   | Lam (Bind (TName, Embed Annot) Term)             -- TODO: what's Bind??
+                   -- Note: Embed Annot is the pattern needed by Bind, there may be, may not be annot
                                         -- ^ abstraction    
    | App Term Term                      -- ^ application    
    | Pi (Bind (TName, Embed Term) Term) -- ^ function type
+                   -- Note: Embed Term is the pattern
 
    -- practical matters for surface language
-   | Ann Term Term            -- ^ Annotated terms `( x : A )`   
+   | Ann Term Term            -- ^ Annotated terms `( x : A )`
+     -- so as to be better for debugging
    | Paren Term               -- ^ parenthesized term, useful for printing
    | Pos SourcePos Term       -- ^ marked source position, for error messages
      
    -- conveniences  
-   | TrustMe Annot            -- ^ an axiom 'TRUSTME', inhabits all types 
+   | TrustMe Annot            -- ^ an axiom 'TRUSTME', inhabits all types
+     -- allow us to turn off the typechecker.. just like admitted
    
    -- unit  
    | TyUnit                   -- ^ The type with a single inhabitant `One`
@@ -185,7 +189,7 @@ derive [''Term,
 --    aeq :: Alpha a => a -> a -> Bool
 --    fv  :: Alpha a => a -> [Name a]
 
-instance Alpha Term
+instance Alpha Term  -- Make alpha available in Term
 
 instance Alpha Annot where
     -- override default behavior so that type annotations are ignored
@@ -200,10 +204,13 @@ instance Alpha Annot where
 --    subst  :: Name b -> b -> a -> a       -- single substitution
 --    substs :: [(Name b, b)] -> a -> a     -- multiple substitution
 
-instance Subst Term Term where
+instance Subst Term Term where  -- this is to make it able to subst term inside terms
   isvar (Var x) = Just (SubstName x)
   isvar _ = Nothing
 
 
 instance Subst Term Annot
 
+
+{- Unbound can make sure we don't need to care about implementation of
+alpha equivalence and other tricky stuffs-}

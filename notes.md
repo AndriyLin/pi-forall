@@ -405,7 +405,8 @@ i.e. substitutions that preserve normal forms.
 Alternatively, we can solve the problem through *elaboration*, the output 
 of a type checker will be a term that works purely in inference mode.
 
------ **06/16/2014 Morning, till here** -----
+
+----- **06/17/2014 Morning** -----
 
 
 # Putting it all together in a Haskell implementation
@@ -509,6 +510,17 @@ and the
 [unbound hackage page](http://hackage.haskell.org/package/unbound-0.4.3.1).
 	 
 ### A TypeChecking monad [Environment.hs]
+
+注：有讲到关于mixing checking mode & inference mode的问题：
+
+	when we in app的rule, we need ultimately:
+
+	G |- (x : A) -> B <= Type 这个没问题
+
+	G |- B {b / x} <= Type 这个不一定succeed，因为context不一定知道x对应的A是啥
+
+
+注：和昨天说的相比，今天的俩function多了一个elaborated term的东西，其中已经fill in the holes了。by providing the annotation of types, we will eliminate the need for checking mode, only inferrence mode is then needed.
 
 Recall that our plan is to write two mutually recursive functions for type
 checking of the following types:
@@ -675,4 +687,24 @@ numbers.  Replace the TRUSTMEs in this file so that it compiles.
 * Andrej Bauer, [How to implement dependent type theory](http://math.andrej.com/2012/11/08/how-to-implement-dependent-type-theory-i/)
 
     
+-----
 
+注：关于equality的讨论：因为只有α-equivalence是不够的，还需要β-equivalence，即reduction之后的相等。所以还需要 refl, comm, trans等等，还有congruence rules, for lambda, for pi types, etc.
+
+		a = b
+	-------------
+	\x. a = \x. b
+
+	  A = A'     B = B'
+	---------------------
+	(x:A)->B = (x:A')->B'
+
+	a = a'		b = b'
+	------------------
+		a b = a' b'
+
+	    a1 = a2
+	-----------------------
+	b {a1 / x} = b {a2 / x}
+
+Questions: We are defining these relations, but how do we implement it?!

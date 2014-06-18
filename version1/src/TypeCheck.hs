@@ -25,6 +25,7 @@ import Data.Maybe
 -- | Infer the type of a term, producing an annotated version of the 
 -- term (whose type can *always* be inferred).
 inferType :: Term -> TcMonad (Term,Type)
+                           -- Term here is the elaborated term
 inferType t = tcTerm t Nothing
 
 -- | Check that the given term has the expected type.  
@@ -40,15 +41,28 @@ checkType tm expectedTy = do
 -- The second argument is 'Nothing' in inference mode and 
 -- an expected type (must be in whnf) in checking mode
 tcTerm :: Term -> Maybe Type -> TcMonad (Term,Type)
+          -- Just t, then in checking mode
+          -- Nothing, then in inference mode
 
-tcTerm t@(Var x) Nothing = err [DS "unimplemented"]
+tcTerm t@(Var x) Nothing = do
+  tyA <- lookupTy x  -- just ask the monad to look up in the context
+  return (Var x, tyA)
   
-tcTerm t@(Type) Nothing = err [DS "unimplemented"]
-  
-tcTerm (Pi bnd) Nothing = err [DS "unimplemented"]
-      
--- Check the type of a function    
-tcTerm (Lam bnd) (Just (Pi bnd2)) = err [DS "unimplemented"]
+tcTerm t@(Type) Nothing = return (Type, Type)  -- saying that Type is a Type
+
+tcTerm (Pi bnd) Nothing = do
+  ((x, unembed -> tyA), tyB) <- unbind bnd -- by this we can make sure that all variables are named x after unembed
+  (elA, _) <- checkType tyA Type
+  (elB, _) <- extendCtx (Sig x elA) $ checkType tyB Type
+  return (Pi (bind (x, embed elA) elB), Type)
+
+
+-- Check the type of a function
+tcTerm (Lam bnd) (Just (Pi bnd2)) = do
+  ((x, annot), body, (_, unembed -> tyA), tyB) <- unbind2Plus bnd bnd2  -- then body and tyB use the same x
+       -- the _ here are because we ignore elaborated terms right now
+  (ebody, _) <- extendCtx (Sig x tyA) $ checkType body tyB
+  return (Lam (bind (x, annot) ebody), Pi bnd2)
 
 tcTerm (Lam _) (Just nf) = 
   err [DS "Lambda expression has a function type, not", DD nf]
@@ -65,11 +79,20 @@ tcTerm (Lam bnd) Nothing = do
   return (Lam (bind (x, embed (Annot (Just atyA))) ebody), 
           Pi  (bind (x, embed atyA) atyB))  
 
-tcTerm (App t1 t2) Nothing = err [DS "unimplemented"]
-                     
-                             
-                             
-                             
+tcTerm (App t1 t2) Nothing = do
+  (et1, ty1) <- inferType t1
+  case ty1 of {- but here it may need to unfold, it may also be something that can be unfolded into a pi type, i.e. not only alpha equivalence, also beta equivalence
+                 one example is the "and p q" type, we need to actually apply p & q into "and"
+                 Then one problem is that the beta reduction may take any amount of time
+              -}
+    Pi bnd -> do
+      ((x, unembed -> tyA), tyB) <- unbind bnd
+      (et2, _) <- checkType t2 tyA
+      return (App et1 et2, subst x et1 tyB)
+    _ -> err [DS "Function", DD t1, DS "should have a function type.",
+              DS "Instead has type", DD ty1]
+
+
 tcTerm (Ann tm ty) Nothing = do
   ty'         <- tcType ty
   (tm', ty'') <- checkType tm ty'
@@ -105,6 +128,7 @@ tcTerm t@(Pcase p bnd ann1) ann2 = err [DS "unimplemented"]
 tcTerm tm (Just ty) = do
   (atm, ty') <- inferType tm 
   unless (aeq ty' ty) $ err [DS "Types don't match", DD ty, DS "and", DD ty']
+    -- Note: here it uses aeq, which is just alpha equivalence
   return (atm, ty)                     
   
 
