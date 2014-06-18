@@ -1,7 +1,7 @@
 Pi-Forall language
 ------------------
 
-One thing I found it different, is that they care not only defining the relation, but also translating the relation into algorithm. What I've learned so far, instead focus more on just defining the relation and prefer the relations that are better for proof, I didn't care too much about their actual implementation.
+One thing I found it different, is that they care not only about defining the relation, but also about translating them into algorithms. What I've learned so far, instead, focus more on just defining the relation prove them, I didn't care that much about their actual implementation.
 
 ---
 
