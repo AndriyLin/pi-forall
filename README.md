@@ -1,6 +1,10 @@
 Pi-Forall language
 ------------------
 
+One thing I found it different, is that they care not only defining the relation, but also translating the relation into algorithm. What I've learned so far, instead focus more on just defining the relation and prefer the relations that are better for proof, I didn't care too much about their actual implementation.
+
+---
+
 This language implemention is designed to accompany four lectures at
 OPLSS. Notes for these lectures are available at:
 
