@@ -47,7 +47,7 @@ tcTerm :: Term -> Maybe Type -> TcMonad (Term,Type)
 tcTerm t@(Var x) Nothing = do
   tyA <- lookupTy x  -- just ask the monad to look up in the context
   return (Var x, tyA)
-  
+
 tcTerm t@(Type) Nothing = return (Type, Type)  -- saying that Type is a Type
 
 tcTerm (Pi bnd) Nothing = do

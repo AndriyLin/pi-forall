@@ -1,3 +1,8 @@
+--- **06/18 Afternoon** ---
+
+equivalence checking is one of the hardest of dependent types
+
+... we must check up to β-reduction
 
 # Equality in Dependently-Typed Languages
 
@@ -90,14 +95,14 @@ The main idea is that we will:
 
  - establish a new judgement to define when types are equal
 
-     G |- A = B
+		G |- A = B
 
  - add the following rule to our type system so that it works "up-to" our
    defined notion of type equivalence
 
-      G |- a : A    G |- A = B
-	   ------------------------- conv
-	   G |- a : B
+		G |- a : A    G |- A = B
+		------------------------- conv
+		   G |- a : B
 	 
  - Figure out how to revise the *algorithmic* version of our type system so
   that it supports the above rule.
@@ -138,7 +143,7 @@ and a *congruence relation* (i.e. if subterms are equal, then larger terms are e
 	 G |- \x.b1 = \x.b2
 
 
-    G |- a1 = a2    G |- b1 b2 
+    G |- a1 = a2    G |- b1 = b2
 	 -------------------------- app
 	 G |- a1 b1 = a2 b2
 
@@ -167,19 +172,19 @@ few places.
   we need to ensure that the type that we infer is the same as the type that 
   is passed to the checker.
 
-      G |- a => A    G |- A = B
-	   -------------------------- :: infer
-	   G |- a <= B
+		G |- a => A    G |- A = B
+		-------------------------- :: infer
+		   G |- a <= B
 
 - In the rule for application, when we infer the type of the function we need
 to make sure that the function actually has a function type. But we don't really 
 know what the domain and co-domain of the function should be. We'd like our 
 algorithm for type equality to be able to figure this out for us.
   
-     G |- a => A    A ?=> (x:A1) -> A2
-	  G |- b <= A1
-	  ---------------------------------- app
-	  G |- a b => A2 { b / x }
+		G |- a => A    A ?=> (x:A1) -> A2
+		G |- b <= A1
+		---------------------------------- app
+		  G |- a b => A2 { b / x }
 	  
 
 ## Using definitional equality
@@ -210,7 +215,10 @@ This function is defined in terms of a helper function:
 
     whnf :: Term -> TcMonad Term
 	 
-that reduces a type to its *weak-head normal form*. 	 
+that reduces a type to its *weak-head normal form*.
+
+注：weak-head nf指的是overall来看是normal form就足够了，比如说 (x : (λx.x)Type) -> Bool就不需要再继续normalize了
+
 
 In `version2` of the the [implementation](version2/src/TypeCheck.hs), these 
 functions are called in a few places: 
@@ -233,7 +241,24 @@ One way to do this is with the following algorithm:
 	    nf1 <- reduce t1
        nf2 <- reduce t2
 		 aeq nf1 nf2
-		 
+
+注：one attempt for equate function:
+
+	equate a b = do
+		na <- nf a
+		nb <- nf b
+		if (aeq na nb) then
+			return()
+		else
+			err...
+
+注：actually:
+
+	equate a b =
+		if aeq a b then done
+		else check their top-level and step by step
+
+
 However, we can do better. We'd like to only reduce as much as
 necessary. Sometimes we can equate the terms without completely 
 reducing them.
@@ -430,7 +455,13 @@ Sometimes, you might see the rule written as follows:
 
     ------------------- refl'
     G |- refl : a = a
-	 
+
+注：
+
+		a = b
+	------------------
+	G |- refl <= a = b		这里只能check，因为要infer的话根本不知道infer啥呀
+
 However, this rule will turn out to be equivalent to the above version.
 
 This *type* is well-formed when both sides have the same type. In other words,
@@ -457,8 +488,9 @@ variable.
 
     G |- a <= A { a1 / x }    G |- b => a1 = x
 	 ------------------------------------------- subst-right
-	 G |- subst a by b => A 
+	 G |- subst a by b => A
 
+	注：上课时候她写的是 <= ....
 
 Note that our elimination form for equality is still fairly powerful. We can
 use it to show that propositional equality is symmetric and transitive.
