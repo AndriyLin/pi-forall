@@ -262,18 +262,10 @@ Note that this version of case doesn't witness the equality between the
 scrutinee `a` and each of the patterns in the branches. To allow that, we 
 can add a substiution to the result type of the case:
 
-
-	Questions about below (TODO):
-	1.	Why says "xx in G", rather than "G |- Ki : Di -> T"
-	2.	dom(Di) = xsi? What is this for?
-	3.	Why "G |- A : T -> Type" here but "G |- A : Type" above?
-
-			could you explain more about this?
-
      G |- a : T
 	  Ki : Di -> T  in G       dom(Di) = xsi
 	  G, Di |- ai : A { Ki xsi / x }
-	  G |- A : T -> Type
+	  G |- A : Type
 	  branches exhaustive
      -------------------------------------------- case
      G |- case a of { Ki xsi -> ai } : A { a / x}
