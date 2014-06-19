@@ -1,3 +1,9 @@
+----- **06/19 Afternoon** -----
+
+最后一节课了，介绍inductive data types, 从而更像coq这样的东西
+
+---
+
 # Datatypes and Indexed Datatypes
 
 Today we'd like to add datatypes and erasable arguments to pi-forall. The code to 
@@ -102,6 +108,10 @@ dependent types.
     data SillyBool : Type where      
        ImTrue  of (b : Bool) (_ : b = True)
        ImFalse of (b: Bool)  (_ : b = False)
+
+	toSB : Bool -> SillyBool
+	toSB = \b. if b then ImTrue b refl
+					else ImFalse b refl
        
 ## Specifying the type system with basic datatypes
 
@@ -171,6 +181,26 @@ For example, a declaration for the `Bool` type would be
 										
 ## Checking (simple) data constructor applications
 
+注：(忘了上下文了..)
+
+	T : D -> Type in G
+	G |- as : D
+	------------------ tcon
+	G |- T as : Type
+
+	K : D'. D -> T in G		== lookupDCon
+	G |- as : D {bs / D'}	== tcArgTele
+	--------------------- datacon
+	G |- K as : T bs
+
+	G |- a : T									        == ensureTCon
+	for each i. Ki : Di -> T in G		dom(Di) = xsi
+				G, Di {bs / D} |- ai : A {Ki xsi / x}  == declarePat, equateWithPat
+	exhaustivity check
+	------------------------------------------------
+	G |- case a of {Ki xsi -> ai} : A {a / x}
+
+
 When we have a datatype declaration, that means that new data type `T` of type
 `Type` will be added to the context. Furthermore, the context should record
 all of the type constructors for that type, `Ki`, as well as the telescope,
@@ -221,7 +251,7 @@ corresponding data constructor.
 
 
      G |- a : T
-	  Ki : Di -> T  in G       
+	  Ki : Di -> T  in G
 	  G, Di |- ai : A
 	  G |- A : Type
 	  branches exhaustive
@@ -231,6 +261,14 @@ corresponding data constructor.
 Note that this version of case doesn't witness the equality between the
 scrutinee `a` and each of the patterns in the branches. To allow that, we 
 can add a substiution to the result type of the case:
+
+
+	Questions about below (TODO):
+	1.	Why says "xx in G", rather than "G |- Ki : Di -> T"
+	2.	dom(Di) = xsi? What is this for?
+	3.	Why "G |- A : T -> Type" here but "G |- A : Type" above?
+
+			could you explain more about this?
 
      G |- a : T
 	  Ki : Di -> T  in G       dom(Di) = xsi
@@ -348,7 +386,10 @@ square brackets. In otherwords, we'll define `beautiful` this way:
 		 B3 of [n = 3]
 		 B5 of [n = 5]
 		 Bsum of (m1:Nat)(m2:Nat)(Beautiful m1)(Beautiful m2)[m = m1+m2]
-		 
+
+	注：这里的[]是constraint，()是参数的样子
+	[]是definitional equivalence
+
 Constraints can appear anywhere in the telescope of a data
 constructor. However, they are not arbitrary equality constraints---we want to
 consider them as deferred substitutions. So therefore, the term on the left
@@ -419,6 +460,8 @@ the actual definitions.
 
 # Erasure (aka forall types)
 =============================
+
+注：好比像vector中，有一些长度>0啥的东西，在真正运行的时候不需要知道这些东西的，这些只是用在type-checking上的，这些可以erase掉
 
 Last thing, let's talk about erasure. In dependently typed languages, some
 arguments are "specificational" and only there for proofs. For efficient
@@ -520,3 +563,10 @@ Miquel. [Implicit Calculus of Constructions](http://www.pps.univ-paris-diderot.f
 Barras and Bernardo. [he Implicit Calculus of Constructions as a Programming Language with Dependent Types](http://www.lix.polytechnique.fr/~bernardo/writings/barras-bernardo-icc-fossacs08.pdf)
 Linger and Sheard. [Erasure and Polymorphism in Pure Type Systems](http://web.cecs.pdx.edu/~sheard/papers/FossacsErasure08.pdf)
 Frank Pfenning. [Intensionality, extensionality, and proof irrelevance in modal type theory](http://www.cs.cmu.edu/~fp/papers/lics01.pdf)
+
+
+-----
+
+##### MY SUMMERY FOR ALL THIS COURSE
+
+She designed a small dependent-typed toy language, and have type-checking for all of it.
