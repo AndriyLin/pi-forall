@@ -269,7 +269,90 @@ This part of the homework has two parts:
 1. First: rewrite the rules above in bidirectional style. Which rules should
   be inference rules? Which ones should be checking rules? If you are familiar
   with other systems, how do these rules compare?
- 
+
+		---------------- Bool
+	    G |- Bool => Type
+
+	    ---------------- true
+	    G |- true => Bool
+
+		---------------- false
+		G |- false => Bool
+
+		 G |- a <= Bool
+		 G |- b => A  ||	G |- c => A
+		 G |- c <= A  ||	G |- b <= A
+		------------------------------- if
+		 G |- if a then b else c => A
+
+	actually, it could also do checking mode..
+
+		 G |- a <= Bool
+		 G |- b <= A
+		 G |- c <= A
+		---------------------------- if
+		 G |- if a then b else c <= A
+
+	既然我们是dependent types，可以在if中加入一些额外的信息，比如 b 之中已知 a is true. e.g.
+
+		T : Bool -> Type
+		T = λb. if b then Bool else One
+
+		f : (b : Bool) -> T b
+		x = λb. if b then false else ()
+
+	This won't type-check.. but it should work!! So:
+
+		 G |- a : Bool
+		 G |- b : A {true/x}
+		 G |- c : A {false/x}
+		------------------------------- if
+		 G |- if a then b else c => A
+
+	or
+
+		 G |- A : Bool -> Type
+		 G |- a : Bool
+		 G |- b : A true
+		 G |- c : A false
+		------------------------------- if
+		 G |- if a then b else c => A a
+
+	even..
+
+		 G |- a <= Bool
+		 G |- b => A1
+		 G |- c => A2
+		------------------------------- if
+		 G |- if a then b else c => if a then A1 else A2
+
+	Stephanie's approach:
+
+		change a (expression) to x (just a var)
+
+
+	注：在note3里有答案，很多是双向的<=>
+
+	-----
+
+	Sigma Types:
+
+	    G |- A <= Type     G, x:A |- B <= Type
+	    ------------------------------------- sigma
+	    G |- { x : A | B } <=> Type
+
+	    G |- a <= A      G |- b <= B { a / x }
+		 ------------------------------------ pair
+		 G |- (a,b) <= { x : A | B }
+		这里用的是checking，应该是和lambda用checking一样的原因，otherwise，A从哪里来？！
+
+	     G |- a => { x : A | B }
+		 G, x:A, y:B |- b <=> C
+		 G |- C <= Type
+	    ------------------------------ weak-pcase
+	    G |- pcase a of (x,y) -> b <=> C
+
+
 2. In Haskell, later: The code in `version1/` includes abstract and concrete
   syntax for booleans and sigma types. The pi-forall file
   `version1/test/Hw1.pi` contains examples of using these new forms. However,
